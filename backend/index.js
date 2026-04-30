@@ -1,17 +1,10 @@
 const express = require('express')
 const morgan = require('morgan')
-app.use(express.static('dist'))
-
 const app = express()
-app.use(express.urlencoded({ extended: true}))
-const PORT = 3001
 
-// =======================
-// MIDDLEWARES
-// =======================
-
-// parsear JSON (IMPORTANTE ir antes de morgan custom)
+app.use(express.static('dist'))
 app.use(express.json())
+app.use(express.urlencoded({ extended: true}))
 
 // Morgan token personalizado para mostrar body (3.8)
 morgan.token('body', (req) => {
@@ -122,7 +115,7 @@ app.use(unknownEndpoint)
 // =======================
 // START SERVER
 // =======================
-
+const PORT = 3001
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
