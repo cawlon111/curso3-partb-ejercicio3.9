@@ -1,109 +1,104 @@
 const express = require('express')
 const morgan = require('morgan')
+const mongoose = require('mongoose')
+
 const app = express()
 
 app.use(express.static('dist'))
 app.use(express.json())
-app.use(express.urlencoded({ extended: true}))
+app.use(express.urlencoded({ extended: true }))
 
-// Morgan token personalizado para mostrar body (3.8)
-morgan.token('body', (req) => {
-  return JSON.stringify(req.body)
-})
+// Morgan token
+morgan.token('body', (req) => JSON.stringify(req.body))
 
-// Morgan logger (3.7 + 3.8)
 app.use(
   morgan(':method :url :status :res[content-length] - :response-time ms :body')
 )
 
 // =======================
-// DATA
+// MONGO DB CONNECTION
 // =======================
 
-let persons = [
-  { id: 1, name: "Arto Hellas", number: "040-123456" },
-  { id: 2, name: "Ada Lovelace", number: "39-44-5323523" },
-  { id: 3, name: "Dan Abramov", number: "12-43-234345" },
-  { id: 4, name: "Mary Poppendieck", number: "39-23-6423122" }
-]
+const password = process.env.MONGO_PASSWORD
+
+const url =
+  `mongodb://cawlon:${password}@ac-wghbgrm-shard-00-00.9caici4.mongodb.net:27017,ac-wghbgrm-shard-00-01.9caici4.mongodb.net:27017,ac-wghbgrm-shard-00-02.9caici4.mongodb.net:27017/guiatelefonica?ssl=true&replicaSet=atlas-sm1n4b-shard-0&authSource=admin&appName=Cluster0`
+
+mongoose.set('strictQuery', false)
+mongoose.connect(url)
+
+// Schema
+const personSchema = new mongoose.Schema({
+  name: String,
+  number: String,
+})
+
+// Model
+const Person = mongoose.model('Person', personSchema)
 
 // =======================
 // ROUTES
 // =======================
 
-// raíz opcional
-app.get('/', (req, res) => {
-  res.send('Phonebook API 🚀')
-})
-
 // GET all persons
 app.get('/api/persons', (req, res) => {
-  res.json(persons)
+  Person.find({}).then(result => {
+    res.json(result)
+  })
 })
 
 // GET info
 app.get('/info', (req, res) => {
-  const date = new Date()
+  Person.countDocuments({}).then(count => {
+    const date = new Date()
 
-  res.send(`
-    <p>Phonebook has info for ${persons.length} people</p>
-    <p>${date}</p>
-  `)
+    res.send(`
+      <p>Phonebook has info for ${count} people</p>
+      <p>${date}</p>
+    `)
+  })
 })
 
 // GET person by id
 app.get('/api/persons/:id', (req, res) => {
-  const id = Number(req.params.id)
-  const person = persons.find(p => p.id === id)
-
-  if (person) {
-    res.json(person)
-  } else {
-    res.status(404).end()
-  }
+  Person.findById(req.params.id)
+    .then(person => {
+      if (person) {
+        res.json(person)
+      } else {
+        res.status(404).end()
+      }
+    })
 })
 
 // DELETE person
 app.delete('/api/persons/:id', (req, res) => {
-  const id = Number(req.params.id)
-  persons = persons.filter(p => p.id !== id)
-  res.status(204).end()
+  Person.findByIdAndDelete(req.params.id)
+    .then(() => {
+      res.status(204).end()
+    })
 })
 
 // POST new person
 app.post('/api/persons', (req, res) => {
   const body = req.body
 
-  // validación básica
   if (!body.name || !body.number) {
-    return res.status(400).json({
-      error: 'name or number missing'
-    })
+    return res.status(400).json({ error: 'name or number missing' })
   }
 
-  // nombre único
-  const nameExists = persons.some(p => p.name === body.name)
-
-  if (nameExists) {
-    return res.status(400).json({
-      error: 'name must be unique'
-    })
-  }
-
-  // crear nueva persona
-  const newPerson = {
-    id: Math.floor(Math.random() * 1000000),
+  const person = new Person({
     name: body.name,
-    number: body.number
-  }
+    number: body.number,
+  })
 
-  persons = persons.concat(newPerson)
-
-  res.json(newPerson)
+  person.save().then(savedPerson => {
+    res.json(savedPerson)
+  })
 })
 
 // =======================
-// UNKNOWN ENDPOINT (3.9 ya preparado)
+// UNKNOWN ENDPOINT
 // =======================
 
 const unknownEndpoint = (req, res) => {
@@ -115,6 +110,7 @@ app.use(unknownEndpoint)
 // =======================
 // START SERVER
 // =======================
+
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
