@@ -5,8 +5,8 @@ const password = process.argv[2]
 const name = process.argv[3]
 const number = process.argv[4]
 
-const url =
-  `mongodb://cawlon:${password}@ac-wghbgrm-shard-00-00.9caici4.mongodb.net:27017,ac-wghbgrm-shard-00-01.9caici4.mongodb.net:27017,ac-wghbgrm-shard-00-02.9caici4.mongodb.net:27017/phonebook?ssl=true&replicaSet=atlas-sm1n4b-shard-0&authSource=admin&appName=Cluster0`
+const url = process.env.MONGODB_URI
+ 
 
 mongoose.set('strictQuery', false)
 
