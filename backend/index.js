@@ -5,6 +5,7 @@ const morgan = require('morgan')
 const Person = require('./models/person')
 
 const app = express()
+const url = process.env.MONGODB_URI
 
 // =====================
 // MIDDLEWARE
