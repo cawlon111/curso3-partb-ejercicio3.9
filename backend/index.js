@@ -2,7 +2,6 @@ require('dotenv').config()
 
 const express = require('express')
 const morgan = require('morgan')
-
 const Person = require('./models/person')
 
 const app = express()
@@ -39,7 +38,7 @@ app.get('/api/persons/:id', (req, res, next) => {
     .catch(error => next(error))
 })
 
-// 🔥 INFO (EJERCICIO 3.18)
+// INFO
 app.get('/info', (req, res) => {
   Person.countDocuments({})
     .then(count => {
@@ -51,17 +50,9 @@ app.get('/info', (req, res) => {
     })
 })
 
-// POST
+// POST (validación backend + Mongoose)
 app.post('/api/persons', (req, res, next) => {
   const body = req.body
-
-  if (!body.name) {
-    return res.status(400).json({ error: 'name missing' })
-  }
-
-  if (!body.number) {
-    return res.status(400).json({ error: 'number missing' })
-  }
 
   const person = new Person({
     name: body.name,
@@ -80,7 +71,7 @@ app.delete('/api/persons/:id', (req, res, next) => {
     .catch(error => next(error))
 })
 
-// PUT
+// PUT (con validadores ACTIVADOS)
 app.put('/api/persons/:id', (req, res, next) => {
   const body = req.body
 
@@ -92,7 +83,11 @@ app.put('/api/persons/:id', (req, res, next) => {
   Person.findByIdAndUpdate(
     req.params.id,
     person,
-    { new: true }
+    {
+      new: true,
+      runValidators: true,
+      context: 'query'
+    }
   )
     .then(updated => res.json(updated))
     .catch(error => next(error))
@@ -117,6 +112,10 @@ const errorHandler = (error, req, res, next) => {
     return res.status(400).send({ error: 'malformatted id' })
   }
 
+  if (error.name === 'ValidationError') {
+    return res.status(400).json({ error: error.message })
+  }
+
   next(error)
 }
 
@@ -125,7 +124,7 @@ app.use(errorHandler)
 // =====================
 // SERVER
 // =====================
-const PORT = process.env.PORT
+const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })

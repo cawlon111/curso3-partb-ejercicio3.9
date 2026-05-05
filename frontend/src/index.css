@@ -9,8 +9,9 @@ body {
   min-height: 100vh;
 }
 
+/* contenedor principal */
 #root {
-  width: 420px;
+  width: min(420px, 90%);
   background: #111;
   padding: 25px;
   border: 2px solid #ff0055;
@@ -28,6 +29,7 @@ h2 {
   color: #ff0055;
   text-transform: uppercase;
   border-bottom: 1px dashed #ff0055;
+  padding-bottom: 5px;
 }
 
 /* inputs */
@@ -38,6 +40,14 @@ input {
   background: #000;
   color: #00ffcc;
   border: 1px solid #ff0055;
+  box-sizing: border-box;
+}
+
+/* focus input */
+input:focus {
+  outline: none;
+  border-color: #00ffcc;
+  box-shadow: 0 0 8px #00ffcc;
 }
 
 /* botones */
@@ -47,6 +57,7 @@ button {
   border: 1px solid #ff0055;
   padding: 6px 10px;
   cursor: pointer;
+  transition: 0.2s ease;
 }
 
 button:hover {
@@ -67,9 +78,10 @@ li {
   border-left: 4px solid #00ffcc;
   display: flex;
   justify-content: space-between;
+  align-items: center;
 }
 
-/* éxito */
+/* NOTIFICACIÓN ÉXITO */
 .notification {
   background: black;
   color: #00ffcc;
@@ -80,7 +92,7 @@ li {
   text-transform: uppercase;
 }
 
-/* error */
+/* ERROR */
 .error {
   background: black;
   color: #ff0055;

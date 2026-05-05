@@ -30,7 +30,7 @@ const App = () => {
       p => p.name.toLowerCase() === nameTrimmed.toLowerCase()
     )
 
-    // ✏️ ACTUALIZAR SI EXISTE
+    // ✏️ UPDATE si existe
     if (existingPerson) {
       const confirmUpdate = window.confirm(
         `${existingPerson.name} ya existe. ¿Actualizar número?`
@@ -46,9 +46,7 @@ const App = () => {
       personService.update(existingPerson.id, updatedPerson)
         .then(returned => {
           setPersons(prev =>
-            prev.map(p =>
-              p.id !== existingPerson.id ? p : returned
-            )
+            prev.map(p => p.id !== existingPerson.id ? p : returned)
           )
 
           setNewName('')
@@ -56,11 +54,9 @@ const App = () => {
 
           showNotification(`${returned.name} actualizado`)
         })
-
-        // 🔥 AQUÍ ESTÁ LO DEL EJERCICIO 2.17
-        .catch(() => {
+        .catch(error => {
           showNotification(
-            `La persona '${existingPerson.name}' ya fue eliminada del servidor`,
+            error.response?.data?.error || 'Error al actualizar persona',
             true
           )
 
@@ -72,7 +68,7 @@ const App = () => {
       return
     }
 
-    // ➕ CREAR NUEVO
+    // ➕ CREATE
     const personObject = {
       name: nameTrimmed,
       number: newNumber
@@ -86,8 +82,11 @@ const App = () => {
 
         showNotification(`${returned.name} añadido`)
       })
-      .catch(() => {
-        showNotification('Error al añadir persona', true)
+      .catch(error => {
+        showNotification(
+          error.response?.data?.error || 'Error al añadir persona',
+          true
+        )
       })
   }
 
