@@ -120,15 +120,19 @@ app.use(unknownEndpoint)
 const errorHandler = (error, req, res, next) => {
   console.error(error.message)
 
-  if (error.name === 'CastError') {
-    return res.status(400).send({ error: 'malformatted id' })
-  }
-
   if (error.name === 'ValidationError') {
-    return res.status(400).json({ error: error.message })
+  // Mensajes más amigables según el campo
+  if (error.errors?.name?.kind === 'minlength') {
+    return res.status(400).json({ 
+      error: 'El nombre debe tener al menos 3 caracteres' 
+    })
   }
-
-  next(error)
+  if (error.errors?.number?.kind === 'required') {
+    return res.status(400).json({ 
+      error: 'El número es obligatorio' 
+    })
+  }
+  return res.status(400).json({ error: error.message })
 }
 
 app.use(errorHandler)
