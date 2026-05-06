@@ -3,7 +3,7 @@ require('dotenv').config()
 const url = process.env.MONGODB_URI
 const express = require('express')
 const morgan = require('morgan')
-const cors = require('cors')  // ← AGREGADO: faltaba esta línea
+const cors = require('cors')
 const Person = require('./models/person')
 const mongoose = require('mongoose')
 const PORT = process.env.PORT || 3001
@@ -19,7 +19,7 @@ mongoose.connect(url)
 // =====================
 // MIDDLEWARE
 // =====================
-app.use(cors())  // ← AHORA FUNCIONA porque requerimos cors arriba
+app.use(cors())
 app.use(express.static('dist'))
 app.use(express.json())
 
@@ -31,8 +31,8 @@ app.use(morgan(':method :url :status :response-time ms :body'))
 // ROUTES
 // =====================
 
-// GET all
-app.get('/api/persons', (req, res) => {
+// GET all - CORREGIDO: agregado 'next' como parámetro
+app.get('/api/persons', (req, res, next) => {
   Person.find({})
     .then(result => res.json(result))
     .catch(error => next(error))
@@ -51,8 +51,8 @@ app.get('/api/persons/:id', (req, res, next) => {
     .catch(error => next(error))
 })
 
-// INFO
-app.get('/info', (req, res) => {
+// INFO - CORREGIDO: agregado 'next' como parámetro
+app.get('/info', (req, res, next) => {
   Person.countDocuments({})
     .then(count => {
       const date = new Date()
@@ -64,7 +64,7 @@ app.get('/info', (req, res) => {
     .catch(error => next(error))
 })
 
-// POST (CREATE) - con validación mejorada
+// POST (CREATE)
 app.post('/api/persons', (req, res, next) => {
   const body = req.body
 
@@ -85,7 +85,7 @@ app.delete('/api/persons/:id', (req, res, next) => {
     .catch(error => next(error))
 })
 
-// PUT (UPDATE) - con validadores activados
+// PUT (UPDATE)
 app.put('/api/persons/:id', (req, res, next) => {
   const body = req.body
 
@@ -123,7 +123,7 @@ const unknownEndpoint = (req, res) => {
 app.use(unknownEndpoint)
 
 // =====================
-// ERROR HANDLER (MEJORADO)
+// ERROR HANDLER (MEJORADO PARA VALIDACIÓN DE TELÉFONO)
 // =====================
 const errorHandler = (error, req, res, next) => {
   console.error(error.message)
@@ -133,29 +133,37 @@ const errorHandler = (error, req, res, next) => {
     return res.status(400).json({ error: 'ID malformado' })
   }
 
-  // Error de validación de Mongoose (MEJORADO para mensajes más claros)
+  // Error de validación de Mongoose
   if (error.name === 'ValidationError') {
-    // Mensajes personalizados según el campo
+    // Validación del nombre (minLength 3)
     if (error.errors?.name?.kind === 'minlength') {
       return res.status(400).json({ 
         error: 'El nombre debe tener al menos 3 caracteres' 
       })
     }
+    // Validación del nombre (required)
     if (error.errors?.name?.kind === 'required') {
       return res.status(400).json({ 
         error: 'El nombre es obligatorio' 
       })
     }
+    // Validación del número (required)
     if (error.errors?.number?.kind === 'required') {
       return res.status(400).json({ 
         error: 'El número de teléfono es obligatorio' 
       })
     }
-    // Si hay otros errores de validación, mostrar el mensaje original
+    // Validación personalizada del número de teléfono
+    if (error.errors?.number) {
+      return res.status(400).json({ 
+        error: error.errors.number.message 
+      })
+    }
+    // Cualquier otro error de validación
     return res.status(400).json({ error: error.message })
   }
 
-  // Error por nombre duplicado (si agregas índice único después)
+  // Error por nombre duplicado (índice único)
   if (error.name === 'MongoServerError' && error.code === 11000) {
     return res.status(400).json({ 
       error: 'Este nombre ya existe en la agenda' 
