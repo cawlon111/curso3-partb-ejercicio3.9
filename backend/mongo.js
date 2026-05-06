@@ -7,7 +7,7 @@ const number = process.argv[4]
 
 
  
-
+const url = process.env.MONGODB_URI
 mongoose.set('strictQuery', false)
 
 mongoose.connect(url)
@@ -17,6 +17,7 @@ mongoose.connect(url)
   .catch(err => {
     console.error('Error connecting to MongoDB:', err.message)
   })
+
 
 // Schema
 const personSchema = new mongoose.Schema({

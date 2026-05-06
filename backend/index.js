@@ -1,15 +1,26 @@
 require('dotenv').config()
 
+const url = process.env.MONGODB_URI
 const express = require('express')
 const morgan = require('morgan')
+const cors = require('cors')        
 const Person = require('./models/person')
-
+const mongoose = require('mongoose')
+const PORT = process.env.PORT || 3001
 const app = express()
-const url = process.env.MONGODB_URI
+
+// conexion
+mongoose.set('strictQuery', false)
+
+mongoose.connect(url)
+  .then(() => console.log('onnected to MongoDB'))
+  .catch(err => console.log('Mongo error:', err))
+
 
 // =====================
 // MIDDLEWARE
 // =====================
+app.use(cors())
 app.use(express.static('dist'))
 app.use(express.json())
 
@@ -125,7 +136,7 @@ app.use(errorHandler)
 // =====================
 // SERVER
 // =====================
-const PORT = process.env.PORT || 3001
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
