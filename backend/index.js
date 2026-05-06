@@ -137,26 +137,26 @@ const errorHandler = (error, req, res, next) => {
   if (error.name === 'ValidationError') {
     // Validación del nombre (minLength 3)
     if (error.errors?.name?.kind === 'minlength') {
-      return res.status(400).json({ 
-        error: 'El nombre debe tener al menos 3 caracteres' 
+      return res.status(400).json({
+        error: 'El nombre debe tener al menos 3 caracteres'
       })
     }
     // Validación del nombre (required)
     if (error.errors?.name?.kind === 'required') {
-      return res.status(400).json({ 
-        error: 'El nombre es obligatorio' 
+      return res.status(400).json({
+        error: 'El nombre es obligatorio'
       })
     }
     // Validación del número (required)
     if (error.errors?.number?.kind === 'required') {
-      return res.status(400).json({ 
-        error: 'El número de teléfono es obligatorio' 
+      return res.status(400).json({
+        error: 'El número de teléfono es obligatorio'
       })
     }
     // Validación personalizada del número de teléfono
     if (error.errors?.number) {
-      return res.status(400).json({ 
-        error: error.errors.number.message 
+      return res.status(400).json({
+        error: error.errors.number.message
       })
     }
     // Cualquier otro error de validación
@@ -165,8 +165,8 @@ const errorHandler = (error, req, res, next) => {
 
   // Error por nombre duplicado (índice único)
   if (error.name === 'MongoServerError' && error.code === 11000) {
-    return res.status(400).json({ 
-      error: 'Este nombre ya existe en la agenda' 
+    return res.status(400).json({
+      error: 'Este nombre ya existe en la agenda'
     })
   }
 
