@@ -3,27 +3,27 @@ require('dotenv').config()
 const url = process.env.MONGODB_URI
 const express = require('express')
 const morgan = require('morgan')
-const cors = require('cors')        
+const cors = require('cors')  // ← AGREGADO: faltaba esta línea
 const Person = require('./models/person')
 const mongoose = require('mongoose')
 const PORT = process.env.PORT || 3001
 const app = express()
 
-// conexion
+// conexión a MongoDB
 mongoose.set('strictQuery', false)
 
 mongoose.connect(url)
-  .then(() => console.log('onnected to MongoDB'))
+  .then(() => console.log('connected to MongoDB'))
   .catch(err => console.log('Mongo error:', err))
-
 
 // =====================
 // MIDDLEWARE
 // =====================
-app.use(cors())
+app.use(cors())  // ← AHORA FUNCIONA porque requerimos cors arriba
 app.use(express.static('dist'))
 app.use(express.json())
 
+// Morgan para logging con body
 morgan.token('body', req => JSON.stringify(req.body))
 app.use(morgan(':method :url :status :response-time ms :body'))
 
@@ -35,6 +35,7 @@ app.use(morgan(':method :url :status :response-time ms :body'))
 app.get('/api/persons', (req, res) => {
   Person.find({})
     .then(result => res.json(result))
+    .catch(error => next(error))
 })
 
 // GET one
@@ -60,9 +61,10 @@ app.get('/info', (req, res) => {
         <p>${date}</p>
       `)
     })
+    .catch(error => next(error))
 })
 
-// POST (validación backend + Mongoose)
+// POST (CREATE) - con validación mejorada
 app.post('/api/persons', (req, res, next) => {
   const body = req.body
 
@@ -83,7 +85,7 @@ app.delete('/api/persons/:id', (req, res, next) => {
     .catch(error => next(error))
 })
 
-// PUT (con validadores ACTIVADOS)
+// PUT (UPDATE) - con validadores activados
 app.put('/api/persons/:id', (req, res, next) => {
   const body = req.body
 
@@ -101,7 +103,13 @@ app.put('/api/persons/:id', (req, res, next) => {
       context: 'query'
     }
   )
-    .then(updated => res.json(updated))
+    .then(updated => {
+      if (updated) {
+        res.json(updated)
+      } else {
+        res.status(404).end()
+      }
+    })
     .catch(error => next(error))
 })
 
@@ -115,24 +123,46 @@ const unknownEndpoint = (req, res) => {
 app.use(unknownEndpoint)
 
 // =====================
-// ERROR HANDLER
+// ERROR HANDLER (MEJORADO)
 // =====================
 const errorHandler = (error, req, res, next) => {
   console.error(error.message)
 
+  // Error de ID malformado
+  if (error.name === 'CastError') {
+    return res.status(400).json({ error: 'ID malformado' })
+  }
+
+  // Error de validación de Mongoose (MEJORADO para mensajes más claros)
   if (error.name === 'ValidationError') {
-  // Mensajes más amigables según el campo
-  if (error.errors?.name?.kind === 'minlength') {
+    // Mensajes personalizados según el campo
+    if (error.errors?.name?.kind === 'minlength') {
+      return res.status(400).json({ 
+        error: 'El nombre debe tener al menos 3 caracteres' 
+      })
+    }
+    if (error.errors?.name?.kind === 'required') {
+      return res.status(400).json({ 
+        error: 'El nombre es obligatorio' 
+      })
+    }
+    if (error.errors?.number?.kind === 'required') {
+      return res.status(400).json({ 
+        error: 'El número de teléfono es obligatorio' 
+      })
+    }
+    // Si hay otros errores de validación, mostrar el mensaje original
+    return res.status(400).json({ error: error.message })
+  }
+
+  // Error por nombre duplicado (si agregas índice único después)
+  if (error.name === 'MongoServerError' && error.code === 11000) {
     return res.status(400).json({ 
-      error: 'El nombre debe tener al menos 3 caracteres' 
+      error: 'Este nombre ya existe en la agenda' 
     })
   }
-  if (error.errors?.number?.kind === 'required') {
-    return res.status(400).json({ 
-      error: 'El número es obligatorio' 
-    })
-  }
-  return res.status(400).json({ error: error.message })
+
+  next(error)
 }
 
 app.use(errorHandler)
@@ -140,7 +170,6 @@ app.use(errorHandler)
 // =====================
 // SERVER
 // =====================
-
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
